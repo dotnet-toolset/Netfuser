@@ -1,0 +1,6 @@
+.vs/
+.idea/
+.nuget/
+bin/
+obj/
+/packages/

@@ -1,0 +1,2 @@
+It is not strictly necessary to keep Runtime in a separate module. The only reason we have it this way is to ensure there are no external dependencies, so we can safely
+inject types from this module without scanning for dependencies

@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Base\Base.Cil\Base.Cil.csproj" />
+    <ProjectReference Include="..\..\Base\Base.Collections\Base.Collections.csproj" />
+    <ProjectReference Include="..\..\Base\Base.IO\Base.IO.csproj" />
+    <ProjectReference Include="..\..\Base\Base.Lang\Base.Lang.csproj" />
+    <ProjectReference Include="..\..\Base\Base.Logging\Base.Logging.csproj" />
+    <ProjectReference Include="..\..\Base\Base.Rng\Base.Rng.csproj" />
+    <ProjectReference Include="..\..\Base\Base.Text\Base.Text.csproj" />
+    <ProjectReference Include="..\Netfuser.Dnext\Netfuser.Dnext.csproj" />
+    <ProjectReference Include="..\Netfuser.Runtime\Netfuser.Runtime.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Reactive" Version="4.2.0" />
+  </ItemGroup>
+
+</Project>
