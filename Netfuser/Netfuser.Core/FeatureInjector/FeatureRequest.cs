@@ -29,6 +29,11 @@ namespace Netfuser.Core.FeatureInjector
         /// </summary>
         public readonly Stack<MethodDef> CallStack;
 
+        /// <summary>
+        /// Constructs new feature request
+        /// </summary>
+        /// <param name="context">Netfuser context</param>
+        /// <param name="emitter">IL emitter</param>
         public FeatureRequest(IContextImpl context, IILEmitter emitter)
         {
             Context = context;
@@ -36,6 +41,11 @@ namespace Netfuser.Core.FeatureInjector
             CallStack = new Stack<MethodDef>();
         }
 
+        /// <summary>
+        /// Checks if the given method is on the feature request stack
+        /// </summary>
+        /// <param name="methodDef">method to check</param>
+        /// <returns></returns>
         public bool IsOnStack(MethodDef methodDef)
         {
             return CallStack.Contains(methodDef);

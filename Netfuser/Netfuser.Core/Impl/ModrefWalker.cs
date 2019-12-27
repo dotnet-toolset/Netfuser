@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using Base.Collections;
 using Base.Lang;
+using Base.Logging;
+using System.Text;
 
 namespace Netfuser.Core.Impl
 {
@@ -12,8 +14,35 @@ namespace Netfuser.Core.Impl
     {
         private class ModState
         {
+            public readonly ModuleDef Module;
+            public readonly ISet<ModState> ReferencesToMe;
+
             public ModuleTreat Treat;
             public bool Resolve, Resolved;
+            public ModState(ModuleDef module)
+            {
+                Module = module;
+                ReferencesToMe = new HashSet<ModState>();
+            }
+
+            public override string ToString()
+            {
+                var result = new StringBuilder().Append(Treat);
+                if (Resolve) result.Append(", will resolve references");
+                if (Resolved) result.Append(", references resolved");
+                return result.ToString();
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(this, obj)) return true;
+                return obj is ModState other && Equals(Module, other.Module);
+            }
+
+            public override int GetHashCode()
+            {
+                return Module.GetHashCode();
+            }
         }
 
         private readonly DepthCounter _recursionCounter;
@@ -59,12 +88,13 @@ namespace Netfuser.Core.Impl
         {
             using (_recursionCounter.Enter())
             {
+                var name = source.Location ?? source.Name;
                 if (_recursionCounter.Value > 100)
-                    throw _context.Error("recursive module reference to " + (source.Location ?? source.Name));
+                    throw _context.Error("recursive module reference to " + name);
                 if (!_states.TryGetValue(source, out var state))
                 {
                     var ev = new NetfuserEvent.ResolveSourceModules(_context, source)
-                        {ResolveReferences = true, Treat = ModuleTreat.Merge};
+                    { ResolveReferences = true, Treat = ModuleTreat.Merge };
                     if (!IsInMainDir(source.Location))
                     {
                         ev.Treat = ModuleTreat.Ignore;
@@ -74,8 +104,11 @@ namespace Netfuser.Core.Impl
                         ev.Treat = parent.Treat;
 
                     _context.Fire(ev);
-                    _states.Add(source, state = new ModState {Treat = ev.Treat, Resolve = ev.ResolveReferences});
+                    _states.Add(source, state = new ModState(source) { Treat = ev.Treat, Resolve = ev.ResolveReferences });
+                    _context.Info($"module {name}: {state}");
                 }
+                if (parent != null)
+                    state.ReferencesToMe.Add(parent);
 
                 if (!state.Resolve || state.Resolved) return;
                 state.Resolved = true;
@@ -89,10 +122,25 @@ namespace Netfuser.Core.Impl
             }
         }
 
+        void AdjustEmbeddedReferences()
+        {
+            while (true)
+            {
+                var mustChangeToEmbed = _states.Values.Where(s => s.ReferencesToMe.Any(r => r.Treat == ModuleTreat.Embed) && s.Treat == ModuleTreat.Merge).ToList();
+                if (mustChangeToEmbed.Count == 0) break;
+                foreach (var s in mustChangeToEmbed)
+                {
+                    _context.Info($"module {s.Module.Name} must be embedded because it is referenced by embedded module(s)");
+                    s.Treat = ModuleTreat.Embed;
+                }
+            }
+        }
+
         public IReadOnlyDictionary<ModuleTreat, IReadOnlySet<ModuleDef>> Resolve()
         {
             foreach (var source in _sources)
                 Resolve(source, null);
+            AdjustEmbeddedReferences();
             return _states.ToLookup(kv => kv.Value.Treat, kv => kv.Key).Where(l => l.Any())
                 .ToDictionary(l => l.Key, l => l.AsReadOnlySet());
         }

@@ -47,7 +47,7 @@ namespace Netfuser.Core.Embedder
         public IEncryption Encryption { get; private set; }
 
 
-        public Embedding(IContextImpl context, string name, IReadable readable)
+        internal Embedding(IContextImpl context, string name, IReadable readable)
         {
             Name = name;
             Context = context;
@@ -70,8 +70,10 @@ namespace Netfuser.Core.Embedder
             Resource = new EmbeddedResource(Name, drf, 0, 0);
         }
 
+        /// <inheritdoc/>
         public override bool Equals(object obj) => obj is Embedding other && other.Name == Name;
 
+        /// <inheritdoc/>
         public override int GetHashCode() => Name.GetHashCode();
     }
 }

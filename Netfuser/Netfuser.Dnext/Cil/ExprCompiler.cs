@@ -275,7 +275,7 @@ namespace Netfuser.Dnext.Cil
                             break;
                         case ExpressionType.RightShift:
                             _ilg.Emit(
-                                new Instruction(TypeUtils.IsUnsigned(be.Left.Type) ? OpCodes.Shr_Un : OpCodes.Shr));
+                                new Instruction(be.Left.Type.IsUnsigned() ? OpCodes.Shr_Un : OpCodes.Shr));
                             break;
                         default:
                             if (Expr2Op.TryGetValue(exp.NodeType, out op))

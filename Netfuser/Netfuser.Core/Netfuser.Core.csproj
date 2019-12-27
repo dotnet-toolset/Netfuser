@@ -18,8 +18,4 @@
     <ProjectReference Include="..\Netfuser.Runtime\Netfuser.Runtime.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.Reactive" Version="4.2.0" />
-  </ItemGroup>
-
 </Project>

@@ -96,6 +96,27 @@ namespace Netfuser.Runtime.Embedder
             return result;
         }
 
+        /// <summary>
+        /// Read the given resource as byte array
+        /// </summary>
+        /// <param name="re">resource entry</param>
+        /// <returns>array of bytes or <see langword="null"/> if no such resource is found</returns>
+        public byte[] GetBytes(ResourceEntry re)
+        {
+            byte[] result = null;
+            using (var stream = Open(re))
+                if (stream != null)
+                {
+                    if (!(stream is MemoryStream mem))
+                    {
+                        mem = new MemoryStream();
+                        stream.CopyTo(mem);
+                    }
+                    result = mem.ToArray();
+                }
+            return result;
+        }
+
         class CacheKey
         {
             private readonly Assembly _ass;

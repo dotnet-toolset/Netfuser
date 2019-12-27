@@ -27,6 +27,8 @@ using Netfuser.Core.Naming;
 using Netfuser.Core.Project;
 using Netfuser.Core.Writers;
 using Netfuser.Runtime.Demanglers.Strings;
+using Netfuser.Runtime.Embedder;
+using Base.Logging;
 
 namespace Netfuser.Core
 {
@@ -241,7 +243,11 @@ namespace Netfuser.Core
         {
             var embedder = ctx.Embedder(NetfuserFactory.AssembliesEmbedderName);
             foreach (var m in modules)
-                embedder.Add(new Embedding((IContextImpl)ctx, m.Assembly.FullName, new ReadableFile(m.Location)));
+            {
+                var emb = new Embedding((IContextImpl)ctx, m.Assembly.FullName, new ReadableFile(m.Location));
+                emb.Properties.Add(ResourceEntry.KeyIsAssembly, true.ToString());
+                embedder.Add(emb);
+            }
             return ctx;
         }
 
@@ -420,7 +426,7 @@ namespace Netfuser.Core
             inj.Add(new DelegateCodec<string, string>(c, mangler, demangler.Demangler));
             ctx.OfType<NetfuserEvent.InjectTypes>().Take(1).Subscribe(ev =>
             {
-                ev.Add(typeof(IStringDemangler)); 
+                ev.Add(typeof(IStringDemangler));
                 ev.Add(demangler.GetType());
             });
             return ctx;

@@ -11,8 +11,11 @@ namespace Netfuser.Core.Embedder
     /// </summary>
     public abstract class EmbedderEvent : NetfuserEvent
     {
+        /// <summary>
+        /// Resource to be embedded
+        /// </summary>
         public readonly Embedding Embedding;
-        protected EmbedderEvent(IContext context, Embedding embedding)
+        private EmbedderEvent(IContext context, Embedding embedding)
             : base(context)
         {
             Embedding = embedding;
@@ -49,7 +52,7 @@ namespace Netfuser.Core.Embedder
             /// Pre-selected compression algorithm, change as needed
             /// </summary>
             public ICompression Compression;
-            public Compress(IContext context, Embedding embedding) : base(context, embedding)
+            internal Compress(IContext context, Embedding embedding) : base(context, embedding)
             {
             }
         }

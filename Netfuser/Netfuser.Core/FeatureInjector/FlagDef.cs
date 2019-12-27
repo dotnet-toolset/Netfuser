@@ -22,17 +22,17 @@ namespace Netfuser.Core.FeatureInjector
         public readonly InjectableType Type;
 
         /// <summary>
-        /// If the flag is passed as a field value, this references the relevant field, otherwise <see langword="null">
+        /// If the flag is passed as a field value, this references the relevant field, otherwise <see langword="null"/>
         /// </summary>
         public readonly FieldDef Field;
 
         /// <summary>
-        /// If the flag is passed as a constructor argument, this references the relevant constructor, otherwise <see langword="null">
+        /// If the flag is passed as a constructor argument, this references the relevant constructor, otherwise <see langword="null"/>
         /// </summary>
         public MethodDef Ctor => _ctor;
 
         /// <summary>
-        /// If the flag is passed as a constructor argument, this references the relevant parameter, otherwise <see langword="null">
+        /// If the flag is passed as a constructor argument, this references the relevant parameter, otherwise <see langword="null"/>
         /// </summary>
         public Parameter FlagParameter => _flagPar;
 

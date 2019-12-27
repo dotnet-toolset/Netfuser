@@ -692,8 +692,8 @@ namespace Netfuser.Dnext.Impl.Cil
         public void NumericConversion(Type typeFrom, Type typeTo, bool isChecked)
         {
             if (typeFrom == typeTo) return;
-            var isUnsigned = TypeUtils.IsUnsigned(typeFrom);
-            var isReal = TypeUtils.IsFloatingPoint(typeFrom);
+            var isUnsigned = typeFrom.IsUnsigned();
+            var isReal = typeFrom.IsFloatingPoint();
             if (typeTo == typeof(float))
             {
                 if (isUnsigned)
