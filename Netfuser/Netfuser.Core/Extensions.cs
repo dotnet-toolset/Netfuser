@@ -29,6 +29,10 @@ using Netfuser.Core.Writers;
 using Netfuser.Runtime.Demanglers.Strings;
 using Netfuser.Runtime.Embedder;
 using Base.Logging;
+using Netfuser.Core.Hierarchy;
+using Netfuser.Core.Impl.Hierarchy;
+using Microsoft.Extensions.DependencyModel;
+using System.Reflection;
 
 namespace Netfuser.Core
 {
@@ -219,7 +223,7 @@ namespace Netfuser.Core
         /// Use this if you want to add additional .NET resources to the resulting assembly, see <see cref="IEmbedder"/>
         /// </summary>
         /// <param name="ctx">Netfuser context</param>
-        /// <param name="name">Name of this embedder. Currently the name <see cref="NetfuserFactory.AssembliesEmbedderName"/> has special meaning
+        /// <param name="name">Name of this embedder. Currently the name <see cref="NetfuserFactory.EmbedderIndexName"/> has special meaning
         /// to embed referenced assemblies and inject additional code to load them on demand,
         /// use any other name for other types of resources</param>
         /// <returns>instance of <see cref="IEmbedder"/> plugin </returns>
@@ -241,13 +245,74 @@ namespace Netfuser.Core
         /// <returns>Netfuser context</returns>
         public static IContext EmbedAssemblies(this IContext ctx, params ModuleDef[] modules)
         {
-            var embedder = ctx.Embedder(NetfuserFactory.AssembliesEmbedderName);
+            var embedder = ctx.Embedder(NetfuserFactory.EmbedderIndexName);
             foreach (var m in modules)
             {
                 var emb = new Embedding((IContextImpl)ctx, m.Assembly.FullName, new ReadableFile(m.Location));
                 emb.Properties.Add(ResourceEntry.KeyIsAssembly, true.ToString());
                 embedder.Add(emb);
             }
+            return ctx;
+        }
+
+        /// <summary>
+        /// Returns .deps.json parser
+        /// </summary>
+        /// <param name="ctx">Netfuser context</param>
+        /// <returns>Netfuser context</returns>
+        public static IDepsJsonPlugin Deps(this IContext ctx)
+        {
+            var c = (IContextImpl)ctx;
+            return c.Plugin<IDepsJsonPlugin>(() => new DepsJsonPlugin(c));
+        }
+
+        /// <summary>
+        /// Embeds native libraries exposed via .deps.json
+        /// </summary>
+        /// <param name="ctx">Netfuser context</param>
+        /// <returns>Netfuser context</returns>
+        public static IContext EmbedNativeLibraries(this IContext ctx)
+        {
+            var deps = ctx.Deps();
+            ctx.OfType<NetfuserEvent.WillMergeModules>().Subscribe(e =>
+            {
+                var c = (IContextImpl)ctx;
+                var dc = deps.Deps;
+                if (dc != null)
+                {
+                    var embedder = ctx.Embedder(NetfuserFactory.EmbedderIndexName);
+                    var bd = Path.GetDirectoryName(c.MainSourceModule.Location);
+                    foreach (var nm in dc.RuntimeLibraries.SelectMany(l => l.NativeLibraryGroups))
+                        foreach (var p in nm.AssetPaths)
+                        {
+                            var fp = Path.Combine(bd, p);
+                            if (File.Exists(fp))
+                            {
+                                var emb = new Embedding(c, Path.GetFileName(p), new ReadableFile(fp));
+                                emb.Properties.Add(ResourceEntry.KeyRid, nm.Runtime);
+                                emb.Properties.Add(ResourceEntry.KeyPath, p);
+                                emb.Properties.Add(ResourceEntry.KeyIsNativeLib, true.ToString());
+                                embedder.Add(emb);
+                            }
+                        }
+                    foreach (var nm in dc.RuntimeLibraries.SelectMany(l => l.RuntimeAssemblyGroups).Where(m => !string.IsNullOrEmpty(m.Runtime)))
+                        foreach (var p in nm.RuntimeFiles)
+                        {
+                            var fp = Path.Combine(bd, p.Path);
+                            if (File.Exists(fp))
+                            {
+                                // using var m=ModuleDefMD.Load(fp);
+                                var n = AssemblyName.GetAssemblyName(fp);
+
+                                var emb = new Embedding(c, n.FullName, new ReadableFile(fp));
+                                emb.Properties.Add(ResourceEntry.KeyPath, p.Path);
+                                emb.Properties.Add(ResourceEntry.KeyRid, nm.Runtime);
+                                emb.Properties.Add(ResourceEntry.KeyIsAssembly, true.ToString());
+                                embedder.Add(emb);
+                            }
+                        }
+                }
+            });
             return ctx;
         }
 
@@ -519,5 +584,23 @@ namespace Netfuser.Core
         }
 
         #endregion
+
+        /// <summary>
+        /// Applies default configuration
+        /// </summary>
+        /// <param name="ctx">Netfuser context</param>
+        /// <returns>Netfuser context</returns>
+        public static IContext ApplyDefaults(this IContext ctx)
+        {
+            return ctx
+                .EmbedNativeLibraries()
+                .MangleMetadata()
+#if !DEBUG
+                .MangleControlFlow()
+#endif
+                .WriteNameMap()
+                .WriteAssembly();
+
+        }
     }
 }

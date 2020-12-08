@@ -144,17 +144,20 @@ namespace Netfuser.Core.Impl.Project
                             cmd = "Rebuild";
                             break;
                     }
-
+                    var logpath = Path.Combine(Path.GetDirectoryName(_root.CsprojPath), "msbuild.log");
                     switch (_buildTool)
                     {
                         case BuildTool.Devenv:
                             buildOptions.Add("/" + cmd);
                             buildOptions.Add("/" + cfg);
+                            buildOptions.Add("/out " +logpath);
                             break;
                         case BuildTool.Msbuild:
-                            buildOptions.Add("/t:" + cmd);
-                            buildOptions.Add("/p:Configuration=" + cfg);
-                            buildOptions.Add("/restore");
+                            buildOptions.Add("-t:" + cmd);
+                            buildOptions.Add("-p:Configuration=" + cfg);
+                            buildOptions.Add("-restore");
+                            buildOptions.Add("-fileLogger");
+                            buildOptions.Add("-fileLoggerParameters:LogFile=" + logpath);
                             if (_options.MaxCpuCount > 0)
                                 buildOptions.Add("/maxcpucount:" + _options.MaxCpuCount);
                             break;
@@ -287,7 +290,7 @@ namespace Netfuser.Core.Impl.Project
                 {
                     case "WinExe":
                     case "Exe":
-                        if (!_targetFramework.StartsWith("netcoreapp3.")) // netcoreapp3.x executable is just a native loader without any CIL
+                        if (!(_targetFramework.StartsWith("netcoreapp3.") || _targetFramework.StartsWith("net5."))) // netcoreapp executable is just a native loader without any CIL
                             ext = ".exe";
                         break;
                 }

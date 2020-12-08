@@ -38,7 +38,7 @@ namespace Netfuser.Example
                 .SplitStringsByFrequency()
                 // Add simple RC4 mangler for strings
                 .MangleStrings(RC4StringMangler.Mangle, RC4StringMangler.Instance)
-                // Add int mangler for smaller strin parts (<=4 bytes)
+                // Add int mangler for smaller string parts (<=4 bytes)
                 .MangleStringsAsInt()
                 // Obfuscate control flow
                 .MangleControlFlow()

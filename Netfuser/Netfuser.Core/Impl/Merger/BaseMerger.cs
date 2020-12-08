@@ -101,12 +101,15 @@ namespace Netfuser.Core.Impl.Merger
                 switch (source)
                 {
                     case PdbForwardMethodInfoCustomDebugInfo i:
+                        return null; // currently not supported by dnlib
                         result = new PdbForwardMethodInfoCustomDebugInfo((IMethodDefOrRef) Importer.Import(i.Method));
                         break;
                     case PdbForwardModuleInfoCustomDebugInfo i:
+                        return null; // currently not supported by dnlib
                         result = new PdbForwardModuleInfoCustomDebugInfo((IMethodDefOrRef) Importer.Import(i.Method));
                         break;
                     case PdbStateMachineTypeNameCustomDebugInfo i:
+                        return null; // currently not supported by dnlib
                         result = new PdbStateMachineTypeNameCustomDebugInfo(Importer.Import(i.Type).ResolveTypeDef());
                         break;
                     case PdbTupleElementNamesCustomDebugInfo i1:

@@ -15,7 +15,7 @@ namespace Netfuser.Core
         public const string CFManglerJumpName = "code-flow-mangle-jump";
         public const string CFManglerSwitchName = "code-flow-mangle-switch";
 
-        public const string AssembliesEmbedderName = "assemblies";
+        public const string EmbedderIndexName = "index";
 
         /// <summary>
         /// Start here - create new Netfuser context

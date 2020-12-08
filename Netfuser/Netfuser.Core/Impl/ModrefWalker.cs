@@ -103,6 +103,11 @@ namespace Netfuser.Core.Impl
                     else if (parent != null && (parent.Treat == ModuleTreat.Copy || parent.Treat == ModuleTreat.Embed))
                         ev.Treat = parent.Treat;
 
+                    if (ev.Treat == ModuleTreat.Merge && source.Assembly.CustomAttributes.Any(a => a.TypeFullName == "System.Reflection.AssemblyMetadataAttribute" && a.HasConstructorArguments && Convert.ToString(a.ConstructorArguments[0].Value) == "NotSupported" && Convert.ToString(a.ConstructorArguments[1].Value) == "True")) // these are ref assemblies
+                    {
+                        ev.Treat = ModuleTreat.Ignore;
+                    }
+
                     _context.Fire(ev);
                     _states.Add(source, state = new ModState(source) { Treat = ev.Treat, Resolve = ev.ResolveReferences });
                     _context.Info($"module {name}: {state}");

@@ -13,9 +13,11 @@ using dnlib.DotNet.Emit;
 using Netfuser.Core.Embedder;
 using Netfuser.Dnext;
 using Netfuser.Dnext.Impl;
+using Netfuser.Runtime;
 using Netfuser.Runtime.Embedder;
 using Netfuser.Runtime.Embedder.Compression;
 using Netfuser.Runtime.Embedder.Encryption;
+using Netfuser.Runtime.Embedder.Native;
 
 namespace Netfuser.Core.Impl.Embedder
 {
@@ -23,7 +25,8 @@ namespace Netfuser.Core.Impl.Embedder
     {
 
         private readonly EmbeddedResource _index;
-        private readonly IDictionary<string, Embedding> _entries;
+        private readonly List<Embedding> _entries;
+        private readonly HashSet<string> _uniqueNames;
 
         public string Name { get; }
 
@@ -31,7 +34,8 @@ namespace Netfuser.Core.Impl.Embedder
             : base(context)
         {
             Name = name;
-            _entries = new Dictionary<string, Embedding>();
+            _entries = new List<Embedding>();
+            _uniqueNames = new HashSet<string>();
             _index = new EmbeddedResource(name, new ReadableDataReaderFactory(this, name), 0, 0);
         }
 
@@ -40,34 +44,24 @@ namespace Netfuser.Core.Impl.Embedder
             switch (ev)
             {
                 case NetfuserEvent.InjectResources injr:
-                    Parallel.ForEach(_entries.Values, e => e.Initialize());
+                    Parallel.ForEach(_entries, e => e.Initialize());
                     injr.Add(_index);
-                    foreach (var embedding in _entries.Values)
+                    foreach (var embedding in _entries)
                         injr.Add(embedding.Resource);
                     break;
                 case NetfuserEvent.InjectTypes inj:
-                    if (Name != NetfuserFactory.AssembliesEmbedderName) break;
+                    if (Name != NetfuserFactory.EmbedderIndexName) break;
                     var ep = Context.MainSourceModule.EntryPoint;
                     if (ep == null) throw Context.Error("assemblies can be embedded only in executable target");
-                    inj.Add(typeof(ResourceEntry));
-                    inj.Add(typeof(ResourceReader));
-                    inj.Add(typeof(EmbeddedAssemblyResolver));
-                    // the following two must be added regardless of the compression/encryption being enabled or disabled,
-                    // because they are referenced in the ResourceReader's CIL
-                    inj.Add(typeof(IDecompressor));
-                    inj.Add(typeof(IDecryptor));
-                    var decompTypes = _entries.Values.Select(e => e.Compression?.RuntimeDecompressorType)
+                    inj.Add(RuntimeUtils.TypesToInject);
+                    var decompTypes = _entries.Select(e => e.Compression?.RuntimeDecompressorType)
                         .Where(t => t != null).ToList();
                     if (decompTypes.Count > 0)
-                    {
                         inj.Add(decompTypes);
-                    }
-                    var decryptTypes = _entries.Values.Select(e => e.Encryption?.RuntimeDecryptorType)
+                    var decryptTypes = _entries.Select(e => e.Encryption?.RuntimeDecryptorType)
                         .Where(t => t != null).ToList();
                     if (decryptTypes.Count > 0)
-                    {
                         inj.Add(decryptTypes);
-                    }
 
                     Context.OfType<NetfuserEvent.CilBodyBuilding>().Where(me => me.Source == ep).Take(1).Subscribe(me =>
                     {
@@ -86,14 +80,15 @@ namespace Netfuser.Core.Impl.Embedder
 
         public void Add(Embedding embedding)
         {
-            _entries.Add(embedding.Name, embedding);
+            embedding.CreateUniqueName(_uniqueNames);
+            _entries.Add(embedding);
         }
 
         public Stream OpenReader()
         {
             var root = new XElement("index");
             var doc = new XDocument(root);
-            foreach (var embedding in _entries.Values)
+            foreach (var embedding in _entries)
             {
                 var res = embedding.Resource;
                 var name = Context.MappedResources[DnextFactory.NewTypeKey(null, res)].Target.Name;

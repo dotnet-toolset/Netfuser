@@ -48,7 +48,7 @@ namespace Netfuser.Core.Impl.Writers
                             File.Copy(cfgPath, dstPathMinusExt + suffix, true);
                     }
                     ctx.MainSourceModule.Assembly.TryGetOriginalTargetFrameworkAttribute(out var fw, out var ver, out _);
-                    if (fw == ".NETCoreApp" && ver.Major == 3 && !ctx.MainSourceModule.Name.EndsWith(ExeSuffix)) {
+                    if (fw == ".NETCoreApp" && ver.Major >= 3 && !ctx.MainSourceModule.Name.EndsWith(ExeSuffix)) {
                         var launcher = srcPathMinusExt+ExeSuffix;
                         if (File.Exists(launcher))
                             File.Copy(launcher, dstPathMinusExt + ExeSuffix, true);

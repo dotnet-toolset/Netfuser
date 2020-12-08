@@ -19,6 +19,9 @@ namespace Netfuser.Core.Embedder
     /// </summary>
     public class Embedding
     {
+
+        private string _uniqueName;
+
         public readonly IContextImpl Context;
         /// <summary>
         /// Name of the resource entry
@@ -32,7 +35,7 @@ namespace Netfuser.Core.Embedder
         /// Properties of this resource entry (see <see cref="ResourceEntry"/> for details)
         /// </summary>
         public readonly Dictionary<string, string> Properties;
-        
+
         /// <summary>
         /// The .NET resource corresponding to this resource entry
         /// </summary>
@@ -59,21 +62,32 @@ namespace Netfuser.Core.Embedder
         {
             var compressors = Context.Fire(new EmbedderEvent.SelectCompression(Context, this, Context.Plugins<ICompression>())).Compressions;
             Encryption = Context.Fire(new EmbedderEvent.Encrypt(Context, this, Context.Plugins<IEncryption>().RandomElementOrDefault(Context.Plugin<IRngPlugin>().Get(NetfuserFactory.EmbedderName)))).Encryption;
-            var drf = new CompressEncryptDataReaderFactory(compressors, Encryption, Readable, Name);
+            var drf = new CompressEncryptDataReaderFactory(compressors, Encryption, Readable, _uniqueName);
             var compression = Context.Fire(new EmbedderEvent.Compress(Context, this) { Compression = drf.CompressionState.Compressor }).Compression;
             if (compression != drf.CompressionState.Compressor)
             {
                 drf.Dispose();
-                drf = new CompressEncryptDataReaderFactory(new[] { compression }, Encryption, Readable, Name);
+                drf = new CompressEncryptDataReaderFactory(new[] { compression }, Encryption, Readable, _uniqueName);
             }
             Compression = drf.CompressionState.Compressor;
-            Resource = new EmbeddedResource(Name, drf, 0, 0);
+            Resource = new EmbeddedResource(_uniqueName, drf, 0, 0);
         }
 
-        /// <inheritdoc/>
-        public override bool Equals(object obj) => obj is Embedding other && other.Name == Name;
-
-        /// <inheritdoc/>
-        public override int GetHashCode() => Name.GetHashCode();
+        /// <summary>
+        /// We can't rely on the Context's dedupe mechanism because it expects that the name is still unique within a [source] module. 
+        /// Here we can have duplicate names within a module, for example for RID-tagged native assemblies or native libs
+        /// </summary>
+        /// <param name="uniqueNames"></param>
+        internal void CreateUniqueName(HashSet<string> uniqueNames)
+        {
+            var baseName = Name;
+            if (Properties.TryGetValue(ResourceEntry.KeyRid, out var rid))
+                baseName +=$"_{rid}";
+            int i = 0;
+            _uniqueName = baseName;
+            while (uniqueNames.Contains(_uniqueName))
+                _uniqueName = baseName + $"_{i++}";
+            uniqueNames.Add(_uniqueName);
+        }
     }
 }

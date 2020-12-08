@@ -6,7 +6,7 @@ namespace Netfuser.Core.Embedder
     /// This plugin allows to embed resources in the target assembly.
     /// Compression and encryption of the resources are supported.
     /// This is a named plugin, and the name has special meaning.
-    /// The instance of the plugin with the name <see cref="NetfuserFactory.AssembliesEmbedderName"/> 
+    /// The instance of the plugin with the name <see cref="NetfuserFactory.EmbedderIndexName"/> 
     /// embeds assemblies referenced by the source modules and injects code needed to
     /// load embedded assemblies on demand at runtime.
     /// Other names may be used freely for other types of resources.
